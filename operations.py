@@ -1,38 +1,35 @@
 import json
 
-def get_last_operations(file_name):
-    with open(file_name, 'r') as f:
-        operations = json.load(f)
-    executed_operations = [op for op in operations if op['state'] == 'EXECUTED']
-    executed_operations.sort(key=lambda x: x['date'], reverse=True)
-    return executed_operations[:5]
+def load_operations(file_name):
+    with open(file_name, 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    return data
 
-def format_operation(operation):
-    date = operation['date'][:10].replace('-', '.')
-    description = operation['description']
-    from_account = operation['from']
-    to_account = operation['to']
-    amount = operation['operationAmount']['amount']
-    currency = operation['operationAmount']['currency']['name']
+def mask_card_number(card_number):
+    masked_number = card_number[:4] + ' XX** **** ' + card_number[-4:]
+    return masked_number
 
-    if ' ' in from_account:
-        from_account = ' '.join([from_account[:6] + '****' + from_account[-4:]])
-    else:
-        from_account = '**' + from_account[-4:]
+def mask_account_number(account_number):
+    masked_number = '**' + account_number[-4:]
+    return masked_number
 
-    if ' ' in to_account:
-        to_account = ' '.join([to_account[:6] + '****' + to_account[-4:]])
-    else:
-        to_account = '**' + to_account[-4:]
+def print_operation(operation):
+    date = operation['date'].split('T')[0].replace('-', '.')
+    from_info = mask_card_number(operation.get('from', ''))
+    to_info = mask_account_number(operation.get('to', ''))
+    print(f"Date: {date}")
+    print(f"Operation Amount: {operation['operationAmount']['amount']} {operation['operationAmount']['currency']['code']}")
+    print(f"Description: {operation['description']}")
+    print(f"From: {from_info}")
+    print(f"To: {to_info}")
 
-    return f"{date} {description}\n{from_account} -> {to_account}\n{amount} {currency}"
-
-def print_operations(file_name):
-    operations = get_last_operations(file_name)
-    for operation in operations:
-        print(format_operation(operation))
+def print_executed_operations(operations_data):
+    executed_operations = [operation for operation in operations_data if operation.get('state') == 'EXECUTED']
+    last_executed_operations = list(reversed(executed_operations))[:5]
+    for operation in last_executed_operations:
+        print_operation(operation)
         print()
 
 if __name__ == "__main__":
-    file_name = 'operations.json'
-    print_operations(file_name)
+    operations_data = load_operations('operations.json')
+    print_executed_operations(operations_data)

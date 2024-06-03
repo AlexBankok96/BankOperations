@@ -1,31 +1,60 @@
-import pytest
-import json
+import operations
 
-def test_get_last_operations():
-    with open('operations.json', 'r') as f:
-        operations = json.load(f)
-    assert len(get_last_operations('operations.json')) == 5
+def test_mask_card_number():
+    assert operations.mask_card_number('1234567890123456') == '1234 XX** **** 3456'
 
-def test_format_operation():
+def test_mask_account_number():
+    assert operations.mask_account_number('1234567890') == '**7890'
+
+def test_print_operation(capsys):
     operation = {
-        "id": 441945886,
-        "state": "EXECUTED",
-        "date": "2019-08-26T10:50:58.294041",
+        "date": "2024-06-01T09:12:34.567890",
         "operationAmount": {
-            "amount": "31957.58",
+            "amount": "100.00",
             "currency": {
-                "name": "руб.",
-                "code": "RUB"
+                "name": "USD",
+                "code": "USD"
             }
         },
-        "description": "Перевод организации",
-        "from": "Maestro 1596837868705199",
-        "to": "Счет 64686473678894779589"
+        "description": "Test operation",
+        "from": "1234567890123456",
+        "to": "1234567890"
     }
-    formatted_operation = format_operation(operation)
-    assert formatted_operation.startswith("26.08.2019 Перевод организации")
-
-def test_print_operations(capsys):
-    print_operations('operations.json')
+    operations.print_operation(operation)
     captured = capsys.readouterr()
-    assert len(captured.out.split('\n\n')) == 5
+    assert "Date: " in captured.out
+
+def test_print_executed_operations(capsys):
+    operations_data = [
+        {
+            "state": "EXECUTED",
+            "date": "2024-06-01T09:12:34.567890",
+            "operationAmount": {
+                "amount": "100.00",
+                "currency": {
+                    "name": "USD",
+                    "code": "USD"
+                }
+            },
+            "description": "Test operation",
+            "from": "1234567890123456",
+            "to": "1234567890"
+        },
+        {
+            "state": "CANCELED",
+            "date": "2024-06-01T09:12:34.567890",
+            "operationAmount": {
+                "amount": "50.00",
+                "currency": {
+                    "name": "USD",
+                    "code": "USD"
+                }
+            },
+            "description": "Another test operation",
+            "from": "6543210987654321",
+            "to": "0987654321"
+        }
+    ]
+    operations.print_executed_operations(operations_data)
+    captured = capsys.readouterr()
+    assert "Date: " in captured.out
